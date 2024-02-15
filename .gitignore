@@ -1,0 +1,11 @@
+# Node.js
+node_modules/
+
+# Arquivos gerados pelo npm
+npm-debug.log
+
+# Arquivos de build
+/build/
+
+# Arquivos de dependências ou módulos
+package-lock.json
