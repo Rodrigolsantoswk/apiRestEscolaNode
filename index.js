@@ -60,6 +60,8 @@ const pool = new Pool({
   }
 });
 
+//------------------------------------//
+
 // Rota para obter todos os registros da tabela 'aluno' ou filtrar por UserID
 app.get('/getAlunos', authenticateToken, async (req, res) => {
   try {
@@ -138,6 +140,8 @@ app.delete('/deleteAlunos/:id', authenticateToken, async (req, res) => {
   }
 });
 
+//------------------------------------//
+
 // Create
 app.post('/postCategorias', authenticateToken, async (req, res) => {
   try {
@@ -180,13 +184,21 @@ app.get('/getCategorias', authenticateToken, async (req, res) => {
 });
 
 // Update
-app.put('/categorias/:id', authenticateToken, async (req, res) => {
+app.put('/putCategorias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
     const { nomeCategoria } = req.body;
+    
+    // Conecta ao banco de dados
     const client = await pool.connect();
+    
+    // Atualiza a categoria com o ID especificado
     const result = await client.query('UPDATE CategoriaMateria SET nomeCategoria = $1 WHERE idCategoriaMateria = $2 RETURNING *', [nomeCategoria, id]);
+    
+    // Retorna os dados atualizados da categoria
     res.json(result.rows[0]);
+    
+    // Libera o cliente do pool
     client.release();
   } catch (err) {
     console.error('Erro ao atualizar categoria:', err);
@@ -194,8 +206,9 @@ app.put('/categorias/:id', authenticateToken, async (req, res) => {
   }
 });
 
+
 // Delete
-app.delete('/categorias/:id', authenticateToken, async (req, res) => {
+app.delete('/deleteCategorias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
     const client = await pool.connect();
@@ -208,6 +221,80 @@ app.delete('/categorias/:id', authenticateToken, async (req, res) => {
   }
 });
 
+//------------------------------------//
+
+// Create 
+app.post('/postMaterias', authenticateToken, async (req, res) => {
+  try {
+    const { nomeMateria, idCategoriaMateria } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('INSERT INTO Materia (nomeMateria, idCategoriaMateria) VALUES ($1, $2) RETURNING *', [nomeMateria, idCategoriaMateria]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao inserir matéria:', err);
+    res.status(500).json({ error: 'Erro ao inserir matéria' });
+  }
+});
+
+// Read
+app.get('/getMaterias', authenticateToken, async (req, res) => {
+  try {
+    const { idMateria, nomeMateria, idCategoriaMateria } = req.query;
+
+    let query = 'SELECT * FROM Materia';
+
+    if (idMateria) {
+      query += ' WHERE idMateria = $1';
+    } else if (nomeMateria) {
+      query += ' WHERE nomeMateria ILIKE $1';
+    } else if (idCategoriaMateria) {
+      query += ' WHERE idCategoriaMateria = $1';
+    }
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idMateria || nomeMateria || idCategoriaMateria].filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar matérias:', err);
+    res.status(500).json({ error: 'Erro ao buscar matérias' });
+  }
+});
+
+// Update
+app.put('/putMaterias/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { nomeMateria, idCategoriaMateria } = req.body;
+    
+    const client = await pool.connect();
+    const result = await client.query('UPDATE Materia SET nomeMateria = $1, idCategoriaMateria = $2 WHERE idMateria = $3 RETURNING *', [nomeMateria, idCategoriaMateria, id]);
+    
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar matéria:', err);
+    res.status(500).json({ error: 'Erro ao atualizar matéria' });
+  }
+});
+
+// Delete
+app.delete('/deleteMaterias/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const client = await pool.connect();
+    await client.query('DELETE FROM Materia WHERE idMateria = $1', [id]);
+    res.json({ message: 'Matéria excluída com sucesso' });
+    client.release();
+  } catch (err) {
+    console.error('Erro ao excluir matéria:', err);
+    res.status(500).json({ error: 'Erro ao excluir matéria' });
+  }
+});
+
+
+//------------------------------------//
 
 // Inicie o servidor
 app.listen(port, () => {
