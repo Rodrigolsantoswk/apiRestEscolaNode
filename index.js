@@ -751,6 +751,69 @@ app.delete('/deleteAvaliacoes/:id', async (req, res) => {
 
 //------------------------------//
 
+// Rota para obter dados da view notas_aluno_avaliacao com filtros
+app.get('/getNotasAlunoAvaliacao', authenticateToken, async (req, res) => {
+  try {
+    const { idAluno, idAvaliacao, idClasse, idMateria, idCategoriaMateria } = req.query;
+
+    let query = 'SELECT * FROM notas_aluno_avaliacao WHERE 1=1';
+
+    if (idAluno) {
+      query += ' AND idAluno = $1';
+    }
+    if (idAvaliacao) {
+      query += ' AND idAvaliacao = $2';
+    }
+    if (idClasse) {
+      query += ' AND idClasse = $3';
+    }
+    if (idMateria) {
+      query += ' AND idMateria = $4';
+    }
+    if (idCategoriaMateria) {
+      query += ' AND idCategoriaMateria = $5';
+    }
+
+    const values = [idAluno, idAvaliacao, idClasse, idMateria, idCategoriaMateria];
+    
+    const client = await pool.connect();
+    const result = await client.query(query, values.filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar dados da view notas_aluno_avaliacao:', err);
+    res.status(500).json({ error: 'Erro ao buscar dados da view notas_aluno_avaliacao' });
+  }
+});
+
+// Rota para obter detalhes do aluno por classe
+app.get('/getDetalhesAlunoPorClasse', authenticateToken, async (req, res) => {
+  try {
+    const query = 'SELECT * FROM detalhes_aluno_por_classe';
+    const client = await pool.connect();
+    const result = await client.query(query);
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar detalhes do aluno por classe:', err);
+    res.status(500).json({ error: 'Erro ao buscar detalhes do aluno por classe' });
+  }
+});
+
+// Rota para obter avaliações por classe
+app.get('/getAvaliacoesPorClasse', authenticateToken, async (req, res) => {
+  try {
+    const query = 'SELECT * FROM avaliacoes_por_classe';
+    const client = await pool.connect();
+    const result = await client.query(query);
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar avaliações por classe:', err);
+    res.status(500).json({ error: 'Erro ao buscar avaliações por classe' });
+  }
+});
+
 // Inicie o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
