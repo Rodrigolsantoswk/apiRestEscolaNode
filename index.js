@@ -138,6 +138,76 @@ app.delete('/deleteAlunos/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Create
+app.post('/postCategorias', authenticateToken, async (req, res) => {
+  try {
+    const { nomeCategoria } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('INSERT INTO CategoriaMateria (nomeCategoria) VALUES ($1) RETURNING *', [nomeCategoria]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao inserir categoria:', err);
+    res.status(500).json({ error: 'Erro ao inserir categoria' });
+  }
+});
+
+// Rota para obter todos os registros da tabela 'CategoriaMateria' ou filtrar por idCategoriaMateria ou nomeCategoria
+app.get('/getCategorias', authenticateToken, async (req, res) => {
+  try {
+    const { idCategoriaMateria, nomeCategoria } = req.query;
+
+    let query = 'SELECT * FROM CategoriaMateria';
+
+    // Se idCategoriaMateria foi fornecido, filtre os dados pelo idCategoriaMateria
+    if (idCategoriaMateria) {
+      query += ' WHERE idCategoriaMateria = $1';
+    } else if (nomeCategoria) {
+      // Se nomeCategoria foi fornecido, filtre os dados pelo nome da categoria
+      query += ' WHERE nomeCategoria ILIKE $1';
+    }
+
+    console.log(query);
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idCategoriaMateria || nomeCategoria].filter(Boolean)); // Filtra valores undefined ou null
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar categorias:', err);
+    res.status(500).json({ error: 'Erro ao buscar categorias' });
+  }
+});
+
+// Update
+app.put('/categorias/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { nomeCategoria } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('UPDATE CategoriaMateria SET nomeCategoria = $1 WHERE idCategoriaMateria = $2 RETURNING *', [nomeCategoria, id]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar categoria:', err);
+    res.status(500).json({ error: 'Erro ao atualizar categoria' });
+  }
+});
+
+// Delete
+app.delete('/categorias/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const client = await pool.connect();
+    await client.query('DELETE FROM CategoriaMateria WHERE idCategoriaMateria = $1', [id]);
+    res.json({ message: 'Categoria excluída com sucesso' });
+    client.release();
+  } catch (err) {
+    console.error('Erro ao excluir categoria:', err);
+    res.status(500).json({ error: 'Erro ao excluir categoria' });
+  }
+});
+
 
 // Inicie o servidor
 app.listen(port, () => {
