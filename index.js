@@ -296,6 +296,171 @@ app.delete('/deleteMaterias/:id', authenticateToken, async (req, res) => {
 
 //------------------------------------//
 
+
+
+// Rota para criar uma nova classe
+app.post('/postClasse', async (req, res) => {
+  try {
+    const { anoClasse, letraClasse, idAnoLetivo } = req.body;
+    const query = 'INSERT INTO Classe (anoClasse, letraClasse, idAnoLetivo) VALUES ($1, $2, $3) RETURNING *';
+    const client = await pool.connect();
+    const values = [anoClasse, letraClasse, idAnoLetivo];
+    const result = await client.query(query, values);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao criar classe' });
+  }
+});
+
+// Rota para buscar todas as classes
+app.get('/getClasse', authenticateToken, async (req, res) => {
+  try {
+    const { idClasse, anoClasse, letraClasse, idAnoLetivo } = req.query;
+
+    let query = 'SELECT * FROM Classe';
+
+    if (idClasse) {
+      query += ' WHERE idClasse = $1';
+    } else if (anoClasse) {
+      query += ' WHERE anoClasse = $1';
+    } else if (letraClasse) {
+      query += ' WHERE letraClasse ILIKE $1';
+    } else if (idAnoLetivo) {
+      query += ' WHERE idAnoLetivo = $1';
+    }
+    const client = await pool.connect();
+    const values = [idClasse || anoClasse || letraClasse || idAnoLetivo].filter(Boolean);
+
+    const result = await client.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar classes:', err);
+    res.status(500).json({ error: 'Erro ao buscar classes' });
+  }
+});
+
+
+
+// Rota para atualizar uma classe
+app.put('/putClasse/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { anoClasse, letraClasse, idAnoLetivo } = req.body;
+    const query = 'UPDATE Classe SET anoClasse = $1, letraClasse = $2, idAnoLetivo = $3 WHERE idClasse = $4 RETURNING *';
+    const client = await pool.connect();
+    const values = [anoClasse, letraClasse, idAnoLetivo, id];
+    const result = await client.query(query, values);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao atualizar classe' });
+  }
+});
+
+// Rota para deletar uma classe
+app.delete('/deleteClasse/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const client = await pool.connect();
+    const query = 'DELETE FROM Classe WHERE idClasse = $1';
+    await client.query(query, [id]);
+    res.json({ message: 'Classe deletada com sucesso' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao deletar classe' });
+  }
+});
+
+
+// Rota para  avaliações
+
+app.post('/postAvaliacoes', async (req, res) => {
+  try {
+    const { descricaoAvaliacao, valorAvaliacao, idClasseMateria, Unidade, dataAvaliacao } = req.body;
+    const client = await pool.connect();
+    const query = `
+      INSERT INTO Avaliacoes (descricaoAvaliacao, valorAvaliacao, idClasseMateria, Unidade, dataAvaliacao)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *`;
+
+    const values = [descricaoAvaliacao, valorAvaliacao, idClasseMateria, Unidade, dataAvaliacao];
+
+    const result = await pool.query(query, values);
+    
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao criar avaliação:', err);
+    res.status(500).json({ error: 'Erro ao criar avaliação' });
+  }
+});
+
+
+app.get('/getAvaliacoes', async (req, res) => {
+  try {
+    const { idClasse, anoClasse, letraClasse, idAnoLetivo } = req.query;
+
+    let query = 'SELECT * FROM Avaliacoes';
+
+    if (idClasse) {
+      query += ' WHERE idClasseMateria = $1';
+    } else if (anoClasse) {
+      query += ' WHERE anoClasse = $1';
+    } else if (letraClasse) {
+      query += ' WHERE letraClasse ILIKE $1';
+    } else if (idAnoLetivo) {
+      query += ' WHERE idAnoLetivo = $1';
+    }
+    const client = await pool.connect();
+    const values = [idClasse || anoClasse || letraClasse || idAnoLetivo].filter(Boolean);
+
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erro ao buscar avaliações:', err);
+    res.status(500).json({ error: 'Erro ao buscar avaliações' });
+  }
+});
+
+// Rota para atualizar uma avaliação
+app.put('/putAvaliacoes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await pool.connect();
+    const { descricaoAvaliacao, valorAvaliacao, idClasseMateria, Unidade, dataAvaliacao } = req.body;
+
+    const query = `
+      UPDATE Avaliacoes
+      SET descricaoAvaliacao = $1, valorAvaliacao = $2, idClasseMateria = $3, Unidade = $4, dataAvaliacao = $5
+      WHERE idAvaliacao = $6
+      RETURNING *`;
+
+    const values = [descricaoAvaliacao, valorAvaliacao, idClasseMateria, Unidade, dataAvaliacao, id];
+    const result = await pool.query(query, values);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erro ao atualizar avaliação:', err);
+    res.status(500).json({ error: 'Erro ao atualizar avaliação' });
+  }
+});
+
+// Rota para excluir uma avaliação
+app.delete('/deleteAvaliacoes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await pool.connect();
+    const query = 'DELETE FROM Avaliacoes WHERE idAvaliacao = $1';
+    const values = [id];
+
+    await pool.query(query, values);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao excluir avaliação:', err);
+    res.status(500).json({ error: 'Erro ao excluir avaliação' });
+  }
+});
+
+
 // Inicie o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
