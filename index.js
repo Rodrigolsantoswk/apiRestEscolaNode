@@ -142,7 +142,7 @@ app.delete('/deleteAlunos/:id', authenticateToken, async (req, res) => {
 
 //------------------------------------//
 
-// Create
+// Rota para inserir uma nova categoria de matéria
 app.post('/postCategorias', authenticateToken, async (req, res) => {
   try {
     const { nomeCategoria } = req.body;
@@ -183,7 +183,7 @@ app.get('/getCategorias', authenticateToken, async (req, res) => {
   }
 });
 
-// Update
+// Rota para atualizar uma categoria pelo ID
 app.put('/putCategorias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -207,7 +207,7 @@ app.put('/putCategorias/:id', authenticateToken, async (req, res) => {
 });
 
 
-// Delete
+// Rota para deletar uma categoria pelo ID
 app.delete('/deleteCategorias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -223,7 +223,7 @@ app.delete('/deleteCategorias/:id', authenticateToken, async (req, res) => {
 
 //------------------------------------//
 
-// Create 
+// Rota para inserir uma nova matéria
 app.post('/postMaterias', authenticateToken, async (req, res) => {
   try {
     const { nomeMateria, idCategoriaMateria } = req.body;
@@ -237,7 +237,7 @@ app.post('/postMaterias', authenticateToken, async (req, res) => {
   }
 });
 
-// Read
+// Rota para selecionar as matérias
 app.get('/getMaterias', authenticateToken, async (req, res) => {
   try {
     const { idMateria, nomeMateria, idCategoriaMateria } = req.query;
@@ -262,7 +262,7 @@ app.get('/getMaterias', authenticateToken, async (req, res) => {
   }
 });
 
-// Update
+// Rota para atualizar as matérais pelo ID
 app.put('/putMaterias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -279,7 +279,7 @@ app.put('/putMaterias/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Delete
+// Rota para deletar uma matéria
 app.delete('/deleteMaterias/:id', authenticateToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -296,9 +296,162 @@ app.delete('/deleteMaterias/:id', authenticateToken, async (req, res) => {
 
 //------------------------------------//
 
+// Rota para criar um novo registro de AnoLetivo
+app.post('/postAnoLetivo', authenticateToken, async (req, res) => {
+  try {
+    const { AnoLetivo } = req.body;
+    const query = 'INSERT INTO AnoLetivo (AnoLetivo) VALUES ($1) RETURNING *';
+    const values = [AnoLetivo];
+    const client = await pool.connect();
+    const result = await client.query(query, values);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao criar registro de AnoLetivo:', err);
+    res.status(500).json({ error: 'Erro ao criar registro de AnoLetivo' });
+  }
+});
+
+// Rota para obter todos os registros de AnoLetivo
+app.get('/getAnoLetivo', authenticateToken, async (req, res) => {
+  try {
+    const { idAnoLetivo, AnoLetivo } = req.query;
+
+    let query = 'SELECT * FROM AnoLetivo';
+
+    if (idAnoLetivo) {
+      query += ' WHERE idAnoLetivo = $1';
+    } else if (AnoLetivo) {
+      query += ' WHERE AnoLetivo ILIKE $1';
+    }
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idAnoLetivo || AnoLetivo].filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar registros de AnoLetivo:', err);
+    res.status(500).json({ error: 'Erro ao buscar registros de AnoLetivo' });
+  }
+});
+
+// Rota para atualizar um registro de AnoLetivo pelo ID
+app.put('/putAnoLetivo/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { AnoLetivo } = req.body;
+    const query = 'UPDATE AnoLetivo SET AnoLetivo = $1 WHERE idAnoLetivo = $2 RETURNING *';
+    const values = [AnoLetivo, id];
+    const client = await pool.connect();
+    const result = await client.query(query, values);
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: 'Registro de AnoLetivo não encontrado' });
+    } else {
+      res.json(result.rows[0]);
+    }
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar registro de AnoLetivo:', err);
+    res.status(500).json({ error: 'Erro ao atualizar registro de AnoLetivo' });
+  }
+});
+
+// Rota para deletar um registro de AnoLetivo pelo ID
+app.delete('/deleteAnoLetivo/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const query = 'DELETE FROM AnoLetivo WHERE idAnoLetivo = $1 RETURNING *';
+    const client = await pool.connect();
+    const result = await client.query(query, [id]);
+    if (result.rows.length === 0) {
+      res.status(404).json({ message: 'Registro de AnoLetivo não encontrado' });
+    } else {
+      res.json({ message: 'Registro de AnoLetivo deletado com sucesso' });
+    }
+    client.release();
+  } catch (err) {
+    console.error('Erro ao deletar registro de AnoLetivo:', err);
+    res.status(500).json({ error: 'Erro ao deletar registro de AnoLetivo' });
+  }
+});
+
+//-------------------------------------//
+
+// Rota para adicionar um novo registro em ClasseAluno
+app.post('/postClasseAluno', authenticateToken, async (req, res) => {
+  try {
+    const { idAluno, idClasse } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('INSERT INTO ClasseAluno (idAluno, idClasse) VALUES ($1, $2) RETURNING *', [idAluno, idClasse]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao inserir aluno na classe:', err);
+    res.status(500).json({ error: 'Erro ao inserir aluno na classe' });
+  }
+});
+
+// Rota para selecionar os registros de classealuno
+app.get('/getClasseAluno', authenticateToken, async (req, res) => {
+  try {
+    const { idClasseAluno, idAluno, idClasse } = req.query;
+
+    let query = 'SELECT * FROM ClasseAluno';
+
+    if (idClasseAluno) {
+      query += ' WHERE idClasseAluno = $1';
+    } else if (idAluno) {
+      query += ' WHERE idAluno = $1';
+    } else if (idClasse) {
+      query += ' WHERE idClasse = $1';
+    }
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idClasseAluno || idAluno || idClasse].filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar registros de ClasseAluno:', err);
+    res.status(500).json({ error: 'Erro ao buscar registros de ClasseAluno' });
+  }
+});
+
+// Rota para atualizar os registros de classealuno pelo ID
+app.put('/putClasseAluno/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { idAluno, idClasse } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('UPDATE ClasseAluno SET idAluno = $1, idClasse = $2 WHERE idClasseAluno = $3 RETURNING *', [idAluno, idClasse, id]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar aluno na classe:', err);
+    res.status(500).json({ error: 'Erro ao atualizar aluno na classe' });
+  }
+});
+
+// Rota para deletar os registros de classealuno
+app.delete('/deleteClasseAluno/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await pool.connect();
+    const result = await client.query('DELETE FROM ClasseAluno WHERE idClasseAluno = $1 RETURNING *', [id]);
+    res.json({ message: 'Registro de ClasseAluno excluído com sucesso' });
+    client.release();
+  } catch (err) {
+    console.error('Erro ao excluir registro de ClasseAluno:', err);
+    res.status(500).json({ error: 'Erro ao excluir registro de ClasseAluno' });
+  }
+});
+
+//------------------------------------//
+
+
+
 // Inicie o servidor
 app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
+  console.log('Servidor rodando na porta ${port}');
 });
 
 
