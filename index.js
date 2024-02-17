@@ -447,11 +447,150 @@ app.delete('/deleteClasseAluno/:id', authenticateToken, async (req, res) => {
 
 //------------------------------------//
 
+// Rota para inserir as matérias na classe
+app.post('/postClasseMateriaAno', authenticateToken, async (req, res) => {
+  try {
+    const { idClasse, idMateria } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('INSERT INTO ClasseMateriaAno (idClasse, idMateria) VALUES ($1, $2) RETURNING *', [idClasse, idMateria]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao inserir classe e matéria no ano:', err);
+    res.status(500).json({ error: 'Erro ao inserir classe e matéria no ano' });
+  }
+});
+
+// Rota para selecionar as matérias da classe
+app.get('/getClasseMateriaAno', authenticateToken, async (req, res) => {
+  try {
+    const { idClasseMateria, idClasse, idMateria } = req.query;
+
+    let query = 'SELECT * FROM ClasseMateriaAno';
+
+    if (idClasseMateria) {
+      query += ' WHERE idClasseMateria = $1';
+    } else if (idClasse) {
+      query += ' WHERE idClasse = $1';
+    } else if (idMateria) {
+      query += ' WHERE idMateria = $1';
+    }
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idClasseMateria || idClasse || idMateria].filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar registros de ClasseMateriaAno:', err);
+    res.status(500).json({ error: 'Erro ao buscar registros de ClasseMateriaAno' });
+  }
+});
+
+// Rota para atualizar as matérias da classe pelo ID
+app.put('/putClasseMateriaAno/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { idClasse, idMateria } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('UPDATE ClasseMateriaAno SET idClasse = $1, idMateria = $2 WHERE idClasseMateria = $3 RETURNING *', [idClasse, idMateria, id]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar classe e matéria no ano:', err);
+    res.status(500).json({ error: 'Erro ao atualizar classe e matéria no ano' });
+  }
+});
+
+// Rota para deletar uma matéria da classe
+app.delete('/deleteClasseMateriaAno/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const client = await pool.connect();
+    const result = await client.query('DELETE FROM ClasseMateriaAno WHERE idClasseMateria = $1 RETURNING *', [id]);
+    res.json({ message: 'Registro de ClasseMateriaAno excluído com sucesso' });
+    client.release();
+  } catch (err) {
+    console.error('Erro ao excluir registro de ClasseMateriaAno:', err);
+    res.status(500).json({ error: 'Erro ao excluir registro de ClasseMateriaAno' });
+  }
+});
+
+//------------------------------------//
+
+// Rota para adicionar as notas dos alunos nas avaliações
+app.post('/postNotasAluno', authenticateToken, async (req, res) => {
+  try {
+    const { idAvaliacao, idAluno, Nota } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('INSERT INTO NotasAluno (idAvaliacao, idAluno, Nota) VALUES ($1, $2, $3) RETURNING *', [idAvaliacao, idAluno, Nota]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao inserir nota do aluno:', err);
+    res.status(500).json({ error: 'Erro ao inserir nota do aluno' });
+  }
+});
+
+// Rota para selecionar as notas das avaliações
+app.get('/getNotasAluno', authenticateToken, async (req, res) => {
+  try {
+    const { idNotas, idAvaliacao, idAluno } = req.query;
+
+    let query = 'SELECT * FROM NotasAluno';
+
+    if (idNotas) {
+      query += ' WHERE idNotas = $1';
+    } else if (idAvaliacao) {
+      query += ' WHERE idAvaliacao = $1';
+    } else if (idAluno) {
+      query += ' WHERE idAluno = $1';
+    }
+
+    const client = await pool.connect();
+    const result = await client.query(query, [idNotas || idAvaliacao || idAluno].filter(Boolean));
+    res.json(result.rows);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao buscar notas dos alunos:', err);
+    res.status(500).json({ error: 'Erro ao buscar notas dos alunos' });
+  }
+});
+
+// Rota para atualizar as notas dos alunos pelo ID
+app.put('/putNotasAluno/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { idAvaliacao, idAluno, Nota } = req.body;
+    const client = await pool.connect();
+    const result = await client.query('UPDATE NotasAluno SET idAvaliacao = $1, idAluno = $2, Nota = $3 WHERE idNotas = $4 RETURNING *', [idAvaliacao, idAluno, Nota, id]);
+    res.json(result.rows[0]);
+    client.release();
+  } catch (err) {
+    console.error('Erro ao atualizar nota do aluno:', err);
+    res.status(500).json({ error: 'Erro ao atualizar nota do aluno' });
+  }
+});
+
+// Rota para deletar as notas dos alunos
+app.delete('deleteNotasAluno/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const client = await pool.connect();
+    await client.query('DELETE FROM NotasAluno WHERE idNotas = $1', [id]);
+    res.json({ message: 'Nota do aluno excluída com sucesso' });
+    client.release();
+  } catch (err) {
+    console.error('Erro ao excluir nota do aluno:', err);
+    res.status(500).json({ error: 'Erro ao excluir nota do aluno' });
+  }
+});
+
+//------------------------------------//
 
 
 // Inicie o servidor
 app.listen(port, () => {
-  console.log('Servidor rodando na porta ${port}');
+  console.log(`Servidor rodando na porta ${port}`);
 });
 
 
